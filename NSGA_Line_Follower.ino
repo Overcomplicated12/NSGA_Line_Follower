@@ -6,7 +6,6 @@
  * - CSV summary line for trials.csv
  */
 
-// i wanna test this rq
 #include <Wire.h>
 #include <ZumoShield.h>
 

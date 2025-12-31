@@ -38,12 +38,13 @@ The workflow is:
 - **Corner-stuck escape** if error stays large too long
 - Prevents “runaway” straight-line failures
 
-### Abort Command
+### Abort During a Run
 - During a run, you can type:
 ``` bash
 FAIL
 ```
 into the serial monitor to abort a run
+- You can also hold down the zumo button for about 1s to abort however the feature does not fully work
 
 ### NSGA-II Integration
 - Parameters are injected via a single macro:

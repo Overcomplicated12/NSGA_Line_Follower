@@ -19,7 +19,14 @@ Pushbutton button(ZUMO_BUTTON);
 // Order: kp,kd,base_speed,min_base_speed,corner1,corner2,corner3,brake_pwr
 // =====================
 #define NSGA_PARAMS \
-  0.180000,1.350000,350,200,2400,2450,2480,0
+    0.1806038450428971,1.0886438604751176,260,90,901,1499,1822,38
+
+
+
+
+
+
+
 
 // ---------- TUNING (auto-filled from NSGA_PARAMS) ----------
 const int MAX_SPEED = 400;  // allow full speed (Zumo is <=400)
@@ -41,7 +48,7 @@ const int BRAKE_PWR = (int)([](){ float a[] = { NSGA_PARAMS }; return a[7]; }())
 // ----------------------------------------------------------
 
 // ---------- RUN CONTROL ----------
-const unsigned long RUN_TIME_MS   = 20000;
+const unsigned long RUN_TIME_MS   = 25000;
 const unsigned long KILL_HOLD_MS  = 1000;
 const unsigned long FINISH_MS     = 100;
 const unsigned long TELEMETRY_MS  = 100;

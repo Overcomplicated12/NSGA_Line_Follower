@@ -304,10 +304,18 @@ void loop() {
     if (absError > CORNER_ERR2) base = min(base, 200);
     if (absError > CORNER_ERR3) base = min(base, 170);
 
-    if (USE_BRAKE_PULSE && BRAKE_PWR > 0 && absError > BRAKE_ERR) {
-      motors.setSpeeds(-BRAKE_PWR, -BRAKE_PWR);
-      delay(BRAKE_MS);
+    // Motor-friendly "brake": NO reverse. Brief coast to reduce speed without slamming gears.
+    const bool USE_SOFT_BRAKE = true;
+    const int  SOFT_BRAKE_MS  = 12;     // short
+    const unsigned long BRAKE_COOLDOWN_MS = 120; // don't spam
+    static unsigned long lastBrakeMs = 0;
+
+    if (USE_SOFT_BRAKE && absError > BRAKE_ERR && (now - lastBrakeMs) > BRAKE_COOLDOWN_MS) {
+      lastBrakeMs = now;
+      motors.setSpeeds(0, 0);          // coast/stop briefly
+      delay(SOFT_BRAKE_MS);
     }
+
 
     // PD turn + TURN CAP (this makes it feel “looser”)
     int turn = (int)(KP * error + KD * dError);

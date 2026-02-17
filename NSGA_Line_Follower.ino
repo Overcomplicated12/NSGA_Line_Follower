@@ -64,6 +64,19 @@ const int ESCAPE_SPEED = 240;             // stronger pivot escape
 const unsigned int WHITE_MAX = 200;       // if ALL sensors <= this => likely no black line
 // -----------------------------------------
 
+// --- Motor-friendly slew limiting ---
+static int curLeft = 0;
+static int curRight = 0;
+const int SLEW_PER_LOOP = 18; // max change in speed per loop (smaller = gentler)
+
+// --- Recovery cooldowns to avoid hammering motors ---
+const unsigned long RECOVERY_COOLDOWN_MS = 250;
+static unsigned long lastRecoveryMs = 0;
+
+// recovery burst pattern (strong action, then coast)
+const unsigned long RECOVERY_BURST_MS = 180;
+const unsigned long RECOVERY_COAST_MS = 80;
+
 // ---------- SERIAL FAIL COMMAND ----------
 char serialCmd[8];
 uint8_t serialIdx = 0;
@@ -160,6 +173,12 @@ void checkSerialFail() {
   }
 }
 
+static int slew(int current, int target, int step) {
+  if (target > current + step) return current + step;
+  if (target < current - step) return current - step;
+  return target;
+}
+
 void loop() {
   // ---- RESET "FAIL" state for the next run ----
   serialFailTriggered = false;
@@ -184,6 +203,9 @@ void loop() {
   unsigned long bigErrSince = 0;
 
   lastError = 0;
+  curLeft = 0;
+  curRight = 0;
+
 
   Serial.println(F("RUN: starting. Hold button 1s to KILL."));
   buzzer.play("L16 cdegreg4");
@@ -247,7 +269,21 @@ void loop() {
         // Search/pivot in direction of last known error
         // If lastError > 0, line was to the right -> turn right to find it.
         int dir = (lastError >= 0) ? 1 : -1;
-        motors.setSpeeds(-dir * SEARCH_SPEED, dir * SEARCH_SPEED);
+        if (now - lastRecoveryMs > RECOVERY_COOLDOWN_MS) {
+          lastRecoveryMs = now;
+
+          // burst pivot
+          motors.setSpeeds(-dir * SEARCH_SPEED, dir * SEARCH_SPEED);
+          delay(RECOVERY_BURST_MS);
+
+          // coast to let gears relax
+          motors.setSpeeds(0, 0);
+          delay(RECOVERY_COAST_MS);
+        } 
+        else {
+           motors.setSpeeds(0, 0); // don't keep twitching
+        }
+
 
         // keep printing while searching
         if (now - lastTel >= TELEMETRY_MS) {
@@ -272,7 +308,19 @@ void loop() {
       if (bigErrSince == 0) bigErrSince = now;
       if (now - bigErrSince >= STUCK_CORNER_MS) {
         int dir = (error >= 0) ? 1 : -1; // pivot toward the line
-        motors.setSpeeds(-dir * ESCAPE_SPEED, dir * ESCAPE_SPEED);
+        if (now - lastRecoveryMs > RECOVERY_COOLDOWN_MS) {
+          lastRecoveryMs = now;
+
+          motors.setSpeeds(-dir * ESCAPE_SPEED, dir * ESCAPE_SPEED);
+          delay(RECOVERY_BURST_MS);
+
+          motors.setSpeeds(0, 0);
+          delay(RECOVERY_COAST_MS);
+        } 
+        else {
+          motors.setSpeeds(0, 0);
+        }
+
 
         if (now - lastTel >= TELEMETRY_MS) {
           lastTel = now;
@@ -324,7 +372,10 @@ void loop() {
     int left  = clampInt(base + turn, -MAX_SPEED, MAX_SPEED);
     int right = clampInt(base - turn, -MAX_SPEED, MAX_SPEED);
 
-    motors.setSpeeds(left, right);
+    curLeft  = slew(curLeft,  left,  SLEW_PER_LOOP);
+    curRight = slew(curRight, right, SLEW_PER_LOOP);
+    motors.setSpeeds(curLeft, curRight);
+
 
     // Telemetry
     if (now - lastTel >= TELEMETRY_MS) {

@@ -19,7 +19,8 @@ Pushbutton button(ZUMO_BUTTON);
 // Order: kp,kd,base_speed,min_base_speed,corner1,corner2,corner3,brake_pwr
 // =====================
 #define NSGA_PARAMS \
-    0.1806038450428971,1.0886438604751176,260,90,901,1499,1822,38
+    0.18,1.35,269,90,1181,1178,2000,40
+
 
 
 
@@ -67,7 +68,7 @@ const unsigned int WHITE_MAX = 200;       // if ALL sensors <= this => likely no
 // --- Motor-friendly slew limiting ---
 static int curLeft = 0;
 static int curRight = 0;
-const int SLEW_PER_LOOP = 18; // max change in speed per loop (smaller = gentler)
+const int SLEW_PER_LOOP = 200; // max change in speed per loop (smaller = gentler)
 
 // --- Recovery cooldowns to avoid hammering motors ---
 const unsigned long RECOVERY_COOLDOWN_MS = 250;
